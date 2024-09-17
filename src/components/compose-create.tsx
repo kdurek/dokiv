@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,26 +19,26 @@ export function ComposeCreate() {
   const router = useRouter();
   const create = api.compose.createStackFile.useMutation();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
+  const [composeName, setComposeName] = useState("");
 
   const handleCreate = () => {
     toast.promise(
       create.mutateAsync(
         {
-          name,
+          composeName,
         },
         {
           onSuccess: () => {
             setOpen(false);
-            setName("");
-            router.push(`/compose/${name}`);
+            setComposeName("");
+            router.push(`/compose/${composeName}`);
           },
         },
       ),
       {
         loading: "Creating...",
         success: "Created successfully",
-        error: (error) => {
+        error: (error: Error) => {
           return error.message;
         },
       },
@@ -59,8 +58,8 @@ export function ComposeCreate() {
           <Label htmlFor="compose-create-name" />
           <Input
             id="compose-create-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={composeName}
+            onChange={(e) => setComposeName(e.target.value)}
           />
         </div>
         <Button onClick={handleCreate}>Create</Button>

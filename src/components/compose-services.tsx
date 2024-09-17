@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
-export function ComposeServices({ name }: { name: string }) {
+export function ComposeServices({ composeName }: { composeName: string }) {
   const [parsedStack] = api.compose.getParsedStackFile.useSuspenseQuery({
-    name,
+    composeName,
   });
 
   return (
@@ -16,20 +16,20 @@ export function ComposeServices({ name }: { name: string }) {
         <div key={key} className="rounded-md border p-4">
           <div>{key}</div>
           <div className="text-muted-foreground">{service.image}</div>
-          <ServiceStatus name={name} />
+          <ServiceStatus composeName={composeName} />
         </div>
       ))}
     </div>
   );
 }
 
-function ServiceStatus({ name }: { name: string }) {
+function ServiceStatus({ composeName }: { composeName: string }) {
   const [containersByName] = api.compose.containersByName.useSuspenseQuery({
-    name,
+    composeName,
   });
 
   const service = containersByName.find((container) =>
-    container.name.includes(name),
+    container.name.includes(composeName),
   );
 
   return (

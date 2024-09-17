@@ -17,14 +17,14 @@ import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-export function ActionsRemove({ name }: { name: string }) {
+export function ActionsRemove({ composeName }: { composeName: string }) {
   const router = useRouter();
 
   const remove = api.compose.removeStackFile.useMutation();
 
   const handleRemove = () => {
     router.push("/");
-    toast.promise(remove.mutateAsync({ name }), {
+    toast.promise(remove.mutateAsync({ composeName }), {
       loading: "Removing...",
       success: () => {
         return "Removed successfully";

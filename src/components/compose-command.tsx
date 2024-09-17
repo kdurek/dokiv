@@ -12,11 +12,11 @@ const WebsocketTerminal = dynamic(
   },
 );
 
-export function ComposeLogs({ composeName }: { composeName: string }) {
+export function ComposeCommand({ composeName }: { composeName: string }) {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-2xl">Logs</h2>
-      <WebsocketTerminal type="logs" composeName={composeName} />
+      <h2 className="text-2xl">Command</h2>
+      <WebsocketTerminal type="command" composeName={composeName} />
     </div>
   );
 }

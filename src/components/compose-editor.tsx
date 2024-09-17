@@ -6,9 +6,9 @@ import { api } from "@/trpc/react";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect } from "react";
 
-export function ComposeEditor({ name }: { name: string }) {
+export function ComposeEditor({ composeName }: { composeName: string }) {
   const isEditing = useAtomValue(isEditingAtom);
-  const [stack] = api.compose.getStackFile.useSuspenseQuery({ name });
+  const [stack] = api.compose.getStackFile.useSuspenseQuery({ composeName });
   const [value, setValue] = useAtom(composeValueAtom);
 
   useEffect(() => {

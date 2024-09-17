@@ -12,12 +12,12 @@ export const composeRouter = createTRPCRouter({
   containersByName: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const result = await ctx.dockerCompose.ps({
-        cwd: `${env.STACKS_DIR}/${input.name}`,
+        cwd: `${env.STACKS_DIR}/${input.composeName}`,
         commandOptions: [["--format", "json"]],
       });
 
@@ -29,25 +29,6 @@ export const composeRouter = createTRPCRouter({
       }
 
       return result.data.services;
-    }),
-
-  subscribeLogs: publicProcedure
-    .input(
-      z.object({
-        name: z.string(),
-        services: z.array(z.string()),
-      }),
-    )
-    .subscription(async function* ({ ctx, input }) {
-      async function* maybeYield() {
-        const logs = await ctx.dockerCompose.logs(input.services, {
-          cwd: `${env.STACKS_DIR}/${input.name}`,
-        });
-
-        yield logs.out;
-      }
-
-      yield* maybeYield();
     }),
 
   listStacks: publicProcedure.query(async ({ ctx }) => {
@@ -101,7 +82,7 @@ export const composeRouter = createTRPCRouter({
   createStackFile: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -110,7 +91,7 @@ export const composeRouter = createTRPCRouter({
         encoding: "utf-8",
       });
       const isNameUnique = existingStacks.every(
-        (entry) => entry.name !== input.name,
+        (entry) => entry.name !== input.composeName,
       );
       if (!isNameUnique) {
         throw new TRPCError({
@@ -118,9 +99,9 @@ export const composeRouter = createTRPCRouter({
           message: "Stack name must be unique",
         });
       }
-      await fs.mkdir(`${env.STACKS_DIR}/${input.name}`);
+      await fs.mkdir(`${env.STACKS_DIR}/${input.composeName}`);
       await fs.writeFile(
-        `${env.STACKS_DIR}/${input.name}/${env.COMPOSE_FILE}`,
+        `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
         `services:
   whoami:
     image: traefik/whoami`,
@@ -130,13 +111,13 @@ export const composeRouter = createTRPCRouter({
   removeStackFile: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       try {
         await ctx.dockerCompose.down({
-          cwd: `${env.STACKS_DIR}/${input.name}`,
+          cwd: `${env.STACKS_DIR}/${input.composeName}`,
         });
       } catch (error) {
         throw new TRPCError({
@@ -146,7 +127,9 @@ export const composeRouter = createTRPCRouter({
       }
 
       try {
-        await fs.rm(`${env.STACKS_DIR}/${input.name}`, { recursive: true });
+        await fs.rm(`${env.STACKS_DIR}/${input.composeName}`, {
+          recursive: true,
+        });
       } catch (error) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -158,13 +141,13 @@ export const composeRouter = createTRPCRouter({
   getStackFile: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
       }),
     )
     .query(async ({ input }) => {
       try {
         return fs.readFile(
-          `${env.STACKS_DIR}/${input.name}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
           "utf-8",
         );
       } catch (error) {
@@ -178,13 +161,13 @@ export const composeRouter = createTRPCRouter({
   getParsedStackFile: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
       }),
     )
     .query(async ({ input }) => {
       try {
         const file = await fs.readFile(
-          `${env.STACKS_DIR}/${input.name}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
           "utf-8",
         );
         return parse(file) as DockerCompose;
@@ -199,7 +182,7 @@ export const composeRouter = createTRPCRouter({
   saveStackFile: publicProcedure
     .input(
       z.object({
-        name: z.string(),
+        composeName: z.string(),
         stack: z.string(),
       }),
     )
@@ -217,51 +200,13 @@ export const composeRouter = createTRPCRouter({
 
       try {
         await fs.writeFile(
-          `${env.STACKS_DIR}/${input.name}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
           input.stack,
         );
       } catch (error) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: (error as Error).message,
-        });
-      }
-    }),
-
-  up: publicProcedure
-    .input(
-      z.object({
-        name: z.string(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      try {
-        await ctx.dockerCompose.upAll({
-          cwd: `${env.STACKS_DIR}/${input.name}`,
-        });
-      } catch (error) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: (error as DockerComposeError).err,
-        });
-      }
-    }),
-
-  down: publicProcedure
-    .input(
-      z.object({
-        name: z.string(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      try {
-        await ctx.dockerCompose.down({
-          cwd: `${env.STACKS_DIR}/${input.name}`,
-        });
-      } catch (error) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: (error as DockerComposeError).err,
         });
       }
     }),
