@@ -5,6 +5,8 @@ import { ComposeLogs } from "@/components/compose-logs";
 import { ComposeServices } from "@/components/compose-services";
 import { api, HydrateClient } from "@/trpc/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function ComposePage({
   params: { composeName },
 }: {

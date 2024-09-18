@@ -1,6 +1,8 @@
 import { HydrateClient } from "@/trpc/server";
 
-export default async function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default function DashboardPage() {
   return (
     <HydrateClient>
       <main>Work in progress</main>
