@@ -1,10 +1,17 @@
 "use client";
 
-import { CodeEditor } from "@/components/code-editor";
 import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
 import { api } from "@/trpc/react";
 import { useAtom, useAtomValue } from "jotai";
+import dynamic from "next/dynamic";
 import { useEffect } from "react";
+
+const CodeEditor = dynamic(
+  () => import("@/components/code-editor").then((mod) => mod.CodeEditor),
+  {
+    ssr: false,
+  },
+);
 
 export function ComposeEditor({ composeName }: { composeName: string }) {
   const isEditing = useAtomValue(isEditingAtom);

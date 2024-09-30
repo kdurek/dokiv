@@ -38,6 +38,7 @@ export function CodeEditor({
         height="100%"
         width="100%"
         extensions={[yaml()]}
+        lang={language}
         editable={editable}
         {...props}
         className={cn("size-full text-sm leading-relaxed", className)}

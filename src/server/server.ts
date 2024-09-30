@@ -3,9 +3,10 @@ import next from "next";
 import { parse } from "url";
 import { setupDockerComposeLogsWebSocketServer } from "@/server/wss/docker-compose-logs";
 import { setupDockerComposeCommandWebSocketServer } from "@/server/wss/docker-compose-command";
+import { env } from "@/env";
 
-const port = parseInt(process.env.PORT ?? "3000", 10);
-const dev = process.env.NODE_ENV !== "production";
+const port = parseInt("3000", 10);
+const dev = env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
@@ -21,7 +22,7 @@ void app.prepare().then(() => {
   server.listen(port);
   console.log(
     `> Server listening at http://localhost:${port} as ${
-      dev ? "development" : process.env.NODE_ENV
+      dev ? "development" : env.NODE_ENV
     }`,
   );
 });

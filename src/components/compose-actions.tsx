@@ -2,7 +2,7 @@
 
 import { ActionsRemove } from "@/components/actions-remove";
 import { Button } from "@/components/ui/button";
-import { useDockerCompose } from "@/hooks/useDockerCompose";
+import { useDockerCompose } from "@/hooks/use-docker-compose";
 import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
 import { api } from "@/trpc/react";
 import { useAtom, useSetAtom } from "jotai";

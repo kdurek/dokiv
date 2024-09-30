@@ -1,12 +1,12 @@
 import { type Config } from "drizzle-kit";
 
-import { env } from "@/env";
+import { DATABASE_URL } from "@/server/consts";
 
 export default {
   schema: "./src/server/db/schema.ts",
+  out: "./src/server/db/migrations",
   dialect: "sqlite",
   dbCredentials: {
-    url: env.DATABASE_URL,
+    url: DATABASE_URL,
   },
-  tablesFilter: ["dokiv_*"],
 } satisfies Config;

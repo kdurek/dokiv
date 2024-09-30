@@ -24,23 +24,23 @@ export function ComposeServices({ composeName }: { composeName: string }) {
 }
 
 function ServiceStatus({ composeName }: { composeName: string }) {
-  const [containersByName] = api.compose.containersByName.useSuspenseQuery({
-    composeName,
-  });
+  const [stackList] = api.compose.getStackList.useSuspenseQuery();
 
-  const service = containersByName.find((container) =>
-    container.name.includes(composeName),
+  const stack = stackList.find((stack) => stack.name === composeName);
+
+  const service = stack?.services.find((service) =>
+    service.name.includes(composeName),
   );
 
   return (
     <Badge
       variant="outline"
       className={cn("bg-gray-500 text-white", {
-        "bg-green-500": service?.state === "running",
-        "bg-red-500": service?.state === "exited",
+        "bg-green-500": service?.status === "running",
+        "bg-red-500": service?.status === "exited",
       })}
     >
-      {service?.state ?? "unknown"}
+      {service?.status ?? "unknown"}
     </Badge>
   );
 }

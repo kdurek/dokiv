@@ -18,9 +18,7 @@ export default async function ComposePage({
   void api.compose.getParsedStackFile.prefetch({
     composeName,
   });
-  void api.compose.containersByName.prefetch({
-    composeName,
-  });
+  void api.compose.getStackList.prefetch();
 
   return (
     <HydrateClient>

@@ -1,3 +1,5 @@
+"use client";
+
 import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
 import {
   dockerComposeCommandSocket,
@@ -41,8 +43,8 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
       { composeName, command: "deploy" },
       async (callback) => {
         if (callback.status === "success") {
-          await utils.invalidate();
           dockerComposeLogsSocket.emit("output", { composeName });
+          await utils.invalidate();
           setStatus("success");
           toast.success(callback.message);
         }
@@ -65,8 +67,8 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
           async (callback) => {
             if (callback.status === "success") {
               setIsEditing(false);
-              await utils.invalidate();
               dockerComposeLogsSocket.emit("output", { composeName });
+              await utils.invalidate();
               setStatus("success");
               toast.success(callback.message);
             }
@@ -93,8 +95,8 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
       { composeName, command: "down" },
       async (callback) => {
         if (callback.status === "success") {
-          await utils.invalidate();
           dockerComposeLogsSocket.emit("output", { composeName });
+          await utils.invalidate();
           setStatus("success");
           toast.success(callback.message);
         }

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export default function DashboardPage() {
   return (
     <HydrateClient>
-      <main>Work in progress</main>
+      <main className="p-4">Work in progress</main>
     </HydrateClient>
   );
 }

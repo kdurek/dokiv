@@ -1,80 +1,56 @@
 import fs from "fs/promises";
 
+import { env } from "@/env";
+import type { DockerCompose } from "@/lib/types";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { z } from "zod";
+import { composeFileExists, getStack } from "@/server/api/utils";
+import { COMPOSE_FILE_NAME, SORT_ORDER } from "@/server/consts";
+import type { DockerComposeError } from "@/server/docker";
 import { TRPCError } from "@trpc/server";
 import { parse } from "yaml";
-import type { DockerCompose } from "@/lib/types";
-import type { DockerComposeError } from "@/server/docker";
-import { env } from "@/env";
+import { z } from "zod";
+import { db } from "@/server/db";
 
 export const composeRouter = createTRPCRouter({
-  containersByName: publicProcedure
-    .input(
-      z.object({
-        composeName: z.string(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const result = await ctx.dockerCompose.ps({
-        cwd: `${env.STACKS_DIR}/${input.composeName}`,
-        commandOptions: [["--format", "json"]],
-      });
-
-      if (result.err) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Failed to list containers",
-        });
-      }
-
-      return result.data.services;
-    }),
-
-  listStacks: publicProcedure.query(async ({ ctx }) => {
+  test: publicProcedure.query(() => {
+    return db.query.users.findMany();
+  }),
+  getStackList: publicProcedure.query(async () => {
     try {
       const entries = await fs.readdir(env.STACKS_DIR, {
         withFileTypes: true,
         encoding: "utf-8",
       });
-      const newStacks = [];
+      const stackList = [];
+
       for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const result = await ctx.dockerCompose.ps({
-            cwd: `${env.STACKS_DIR}/${entry.name}`,
-            commandOptions: [["--format", "json"]],
+        try {
+          // Check if it is a directory
+          const stat = await fs.stat(`${env.STACKS_DIR}/${entry.name}`);
+          if (!stat.isDirectory()) {
+            continue;
+          }
+          // // If no compose file exists, skip it
+          if (!(await composeFileExists(env.STACKS_DIR, entry.name))) {
+            continue;
+          }
+          const stack = await getStack(env.STACKS_DIR, entry.name);
+          stackList.push(stack);
+        } catch (error) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: (error as Error).message,
           });
-          const getStatus = () => {
-            if (
-              result.data.services.length &&
-              result.data.services.every(
-                (service) => service.state === "running",
-              )
-            ) {
-              return "running";
-            }
-
-            if (
-              result.data.services.length &&
-              result.data.services.some((service) => service.state === "exited")
-            ) {
-              return "exited";
-            }
-
-            return "unknown";
-          };
-          const stack = {
-            name: entry.name,
-            status: getStatus(),
-          };
-          newStacks.push(stack);
         }
       }
-      return newStacks;
+
+      return stackList.sort((a, b) => {
+        return SORT_ORDER.indexOf(a.status) - SORT_ORDER.indexOf(b.status);
+      });
     } catch (error) {
       throw new TRPCError({
         code: "NOT_FOUND",
-        message: "Failed to list stacks",
+        message: (error as Error).message,
       });
     }
   }),
@@ -101,7 +77,7 @@ export const composeRouter = createTRPCRouter({
       }
       await fs.mkdir(`${env.STACKS_DIR}/${input.composeName}`);
       await fs.writeFile(
-        `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
+        `${env.STACKS_DIR}/${input.composeName}/${COMPOSE_FILE_NAME}`,
         `services:
   whoami:
     image: traefik/whoami`,
@@ -147,7 +123,7 @@ export const composeRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         return fs.readFile(
-          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${COMPOSE_FILE_NAME}`,
           "utf-8",
         );
       } catch (error) {
@@ -167,7 +143,7 @@ export const composeRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         const file = await fs.readFile(
-          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${COMPOSE_FILE_NAME}`,
           "utf-8",
         );
         return parse(file) as DockerCompose;
@@ -200,7 +176,7 @@ export const composeRouter = createTRPCRouter({
 
       try {
         await fs.writeFile(
-          `${env.STACKS_DIR}/${input.composeName}/${env.COMPOSE_FILE}`,
+          `${env.STACKS_DIR}/${input.composeName}/${COMPOSE_FILE_NAME}`,
           input.stack,
         );
       } catch (error) {
