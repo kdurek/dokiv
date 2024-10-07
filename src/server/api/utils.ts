@@ -64,14 +64,12 @@ export async function getStack(
     commandOptions: [["--format", "json"]],
   });
 
-  const services: Stack["services"] = [];
-
-  for (const service of composeList.data.services) {
-    services.push({
+  const services: Stack["services"] = composeList.data.services.map(
+    (service) => ({
       name: service.name,
       status: service.state,
-    });
-  }
+    }),
+  );
 
   return {
     name: stackName,

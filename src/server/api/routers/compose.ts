@@ -13,36 +13,35 @@ import { z } from "zod";
 export const composeRouter = createTRPCRouter({
   getStackList: publicProcedure.query(async () => {
     try {
-      const entries = await fs.readdir(env.STACKS_DIR, {
-        withFileTypes: true,
-        encoding: "utf-8",
-      });
-      const stackList = [];
+      const entries = (
+        await fs.readdir(env.STACKS_DIR, {
+          withFileTypes: true,
+          encoding: "utf-8",
+        })
+      ).filter((entry) => entry.isDirectory());
 
-      for (const entry of entries) {
-        try {
-          // Check if it is a directory
-          const stat = await fs.stat(`${env.STACKS_DIR}/${entry.name}`);
-          if (!stat.isDirectory()) {
-            continue;
+      const stackList = await Promise.all(
+        entries.map(async (entry) => {
+          try {
+            // Skip if the directory does not contain a compose file
+            if (!(await composeFileExists(env.STACKS_DIR, entry.name))) {
+              return;
+            }
+            return getStack(env.STACKS_DIR, entry.name);
+          } catch (error) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: (error as Error).message,
+            });
           }
-          // // If no compose file exists, skip it
-          if (!(await composeFileExists(env.STACKS_DIR, entry.name))) {
-            continue;
-          }
-          const stack = await getStack(env.STACKS_DIR, entry.name);
-          stackList.push(stack);
-        } catch (error) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: (error as Error).message,
-          });
-        }
-      }
+        }),
+      );
 
-      return stackList.sort((a, b) => {
-        return SORT_ORDER.indexOf(a.status) - SORT_ORDER.indexOf(b.status);
-      });
+      return stackList
+        .filter((stack) => stack !== undefined)
+        .sort(
+          (a, b) => SORT_ORDER.indexOf(a.status) - SORT_ORDER.indexOf(b.status),
+        );
     } catch (error) {
       throw new TRPCError({
         code: "NOT_FOUND",
