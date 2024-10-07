@@ -2,7 +2,7 @@ import { env } from "@/env";
 
 export const SORT_ORDER = ["running", "exited", "unknown"];
 
-export const COMPOSE_FILE_NAME = "compose.yml";
+export const COMPOSE_FILE_NAME = "compose.yaml";
 
 export const COMPOSE_FILE_NAMES = [
   "docker-compose.yaml",
