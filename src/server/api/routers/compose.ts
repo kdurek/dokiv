@@ -9,12 +9,8 @@ import type { DockerComposeError } from "@/server/docker";
 import { TRPCError } from "@trpc/server";
 import { parse } from "yaml";
 import { z } from "zod";
-import { db } from "@/server/db";
 
 export const composeRouter = createTRPCRouter({
-  test: publicProcedure.query(() => {
-    return db.query.users.findMany();
-  }),
   getStackList: publicProcedure.query(async () => {
     try {
       const entries = await fs.readdir(env.STACKS_DIR, {
