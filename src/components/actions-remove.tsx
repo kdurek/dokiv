@@ -13,28 +13,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { api } from "@/trpc/react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
-export function ActionsRemove({ composeName }: { composeName: string }) {
-  const router = useRouter();
-
-  const remove = api.compose.removeStackFile.useMutation();
-
-  const handleRemove = () => {
-    router.push("/");
-    toast.promise(remove.mutateAsync({ composeName }), {
-      loading: "Removing...",
-      success: () => {
-        return "Removed successfully";
-      },
-      error: (error: Error) => {
-        return error.message;
-      },
-    });
-  };
-
+export function ActionsRemove({ onClick }: { onClick: () => void }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -51,7 +31,7 @@ export function ActionsRemove({ composeName }: { composeName: string }) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleRemove}
+            onClick={onClick}
             className={cn(buttonVariants({ variant: "destructive" }))}
           >
             Continue

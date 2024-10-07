@@ -13,9 +13,10 @@ export function ComposeActions({ composeName }: { composeName: string }) {
   });
   const [isEditing, setIsEditing] = useAtom(isEditingAtom);
   const setValue = useSetAtom(composeValueAtom);
-  const { status, save, deploy, saveAndDeploy, down } = useDockerCompose({
-    composeName,
-  });
+  const { status, save, deploy, saveAndDeploy, down, remove } =
+    useDockerCompose({
+      composeName,
+    });
 
   const handleCancel = () => {
     setValue(stack);
@@ -61,7 +62,7 @@ export function ComposeActions({ composeName }: { composeName: string }) {
           </Button>
         </>
       )}
-      <ActionsRemove composeName={composeName} />
+      <ActionsRemove onClick={remove} />
     </div>
   );
 }

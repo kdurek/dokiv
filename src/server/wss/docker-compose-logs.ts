@@ -1,6 +1,7 @@
 import type http from "node:http";
 import { Server } from "socket.io";
 import { spawnTerminal } from "./utils";
+import { validateWebSocketRequest } from "@/server/auth/wss";
 
 export interface DockerComposeLogsServerToClientEvents {
   output: (data: string) => void;
@@ -20,7 +21,10 @@ export const setupDockerComposeLogsWebSocketServer = (
     path: "/docker-compose-logs",
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
+    const { session } = await validateWebSocketRequest(socket.request);
+    if (!session) socket.disconnect();
+
     socket.on("output", (data) => {
       const ptyProcess = spawnTerminal(
         data.composeName,

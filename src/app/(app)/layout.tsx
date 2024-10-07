@@ -1,10 +1,17 @@
 import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
+import { validateRequest } from "@/server/auth/react";
 import { api, HydrateClient } from "@/trpc/server";
+import { redirect } from "next/navigation";
 
-export default function ComposeLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const { session } = await validateRequest();
+  if (!session) {
+    return redirect("/login");
+  }
+
   void api.compose.getStackList.prefetch();
 
   return (

@@ -62,8 +62,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/server/db/migrations ./migrations
+COPY --from=builder /app/src/server/db/migrate.ts ./migrate.ts
 COPY --from=builder /app/start.sh ./start.sh
-# COPY --from=builder /app/server/db/migrations ./migrations
 COPY --from=prod-deps /app/node_modules ./node_modules
 
 VOLUME /app/data

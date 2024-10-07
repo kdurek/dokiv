@@ -1,3 +1,4 @@
+import { validateWebSocketRequest } from "@/server/auth/wss";
 import { spawnTerminal } from "@/server/wss/utils";
 import type http from "node:http";
 import { Server } from "socket.io";
@@ -23,7 +24,10 @@ export const setupDockerComposeCommandWebSocketServer = (
     path: "/docker-compose-command",
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
+    const { session } = await validateWebSocketRequest(socket.request);
+    if (!session) socket.disconnect();
+
     socket.on("output", (data, callback) => {
       if (data.command === "deploy") {
         const ptyProcess = spawnTerminal(

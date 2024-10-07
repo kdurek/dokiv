@@ -12,5 +12,5 @@ export const COMPOSE_FILE_NAMES = [
 ];
 
 export const BASE_PATH =
-  env.NODE_ENV !== "production" ? ".docker" : "/app/data";
-export const DATABASE_URL = `${BASE_PATH}/db.sqlite`;
+  env.NODE_ENV !== "production" ? ".docker/data" : "/app/data";
+export const DATABASE_URL = `${BASE_PATH}/dokiv.db`;

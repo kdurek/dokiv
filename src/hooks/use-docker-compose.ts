@@ -7,6 +7,7 @@ import {
 } from "@/lib/socket";
 import { api } from "@/trpc/react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -14,8 +15,10 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
+  const router = useRouter();
   const utils = api.useUtils();
   const saveMutation = api.compose.saveStackFile.useMutation();
+  const removeMutation = api.compose.removeStackFile.useMutation();
   const value = useAtomValue(composeValueAtom);
   const setIsEditing = useSetAtom(isEditingAtom);
 
@@ -25,7 +28,6 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
       loading: "Saving...",
       success: async () => {
         setIsEditing(false);
-        await utils.invalidate();
         setStatus("success");
         return "Saved successfully";
       },
@@ -108,11 +110,28 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
     );
   };
 
+  const remove = () => {
+    setStatus("loading");
+    router.push("/");
+    toast.promise(removeMutation.mutateAsync({ composeName }), {
+      loading: "Removing...",
+      success: () => {
+        setStatus("success");
+        return "Removed successfully";
+      },
+      error: (error: Error) => {
+        setStatus("error");
+        return error.message;
+      },
+    });
+  };
+
   return {
     status,
     save,
     deploy,
     saveAndDeploy,
     down,
+    remove,
   };
 }

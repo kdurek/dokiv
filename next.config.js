@@ -14,7 +14,7 @@ const config = {
   //   ignoreBuildErrors: true,
   // },
   experimental: {
-    serverComponentsExternalPackages: ["dockerode"],
+    serverComponentsExternalPackages: ["@node-rs/argon2", "dockerode"],
   },
 };
 
