@@ -1,8 +1,11 @@
-import { COMPOSE_FILE_NAMES } from "@/server/consts";
+import { COMPOSE_FILE_NAME, COMPOSE_FILE_NAMES } from "@/server/consts";
 import path from "path";
 import fs from "fs";
+import fsAsync from "fs/promises";
 import { dockerCompose } from "@/server/docker";
 import type { DockerComposePsResultService } from "docker-compose/dist/v2";
+import { parse } from "yaml";
+import type { DockerCompose } from "@/lib/types";
 
 export type Stack = {
   name: string;
@@ -11,6 +14,8 @@ export type Stack = {
     name: DockerComposePsResultService["name"];
     status: DockerComposePsResultService["state"];
   }[];
+  stackFile: string;
+  parsedStackFile: DockerCompose;
 };
 
 export function fileExists(filename: string): Promise<boolean> {
@@ -55,6 +60,13 @@ export function getStackServicesStatus(services: Stack["services"]) {
   return "unknown";
 }
 
+export async function getStackFile(stackDir: string, stackName: string) {
+  return fsAsync.readFile(
+    `${stackDir}/${stackName}/${COMPOSE_FILE_NAME}`,
+    "utf-8",
+  );
+}
+
 export async function getStack(
   stackDir: string,
   stackName: string,
@@ -71,9 +83,15 @@ export async function getStack(
     }),
   );
 
+  const stackFile = await getStackFile(stackDir, stackName);
+
+  const parsedStackFile = parse(stackFile) as DockerCompose;
+
   return {
     name: stackName,
     status: getStackServicesStatus(services),
     services,
+    stackFile,
+    parsedStackFile,
   };
 }

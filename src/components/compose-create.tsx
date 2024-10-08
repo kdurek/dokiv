@@ -10,40 +10,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/trpc/react";
+import { useDockerCompose } from "@/hooks/use-docker-compose";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export function ComposeCreate() {
   const router = useRouter();
-  const create = api.compose.createStackFile.useMutation();
   const [open, setOpen] = useState(false);
   const [composeName, setComposeName] = useState("");
+  const { create } = useDockerCompose({ composeName });
 
-  const handleCreate = () => {
-    toast.promise(
-      create.mutateAsync(
-        {
-          composeName,
-        },
-        {
-          onSuccess: () => {
-            setOpen(false);
-            setComposeName("");
-            router.push(`/compose/${composeName}`);
-          },
-        },
-      ),
-      {
-        loading: "Creating...",
-        success: "Created successfully",
-        error: (error: Error) => {
-          return error.message;
-        },
-      },
-    );
-  };
+  const handleCreate = () =>
+    create(() => {
+      setOpen(false);
+      setComposeName("");
+      router.push(`/compose/${composeName}`);
+    });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -1,6 +1,7 @@
 import { createServer } from "http";
 import next from "next";
 import { parse } from "url";
+import { setupStackListWebSocketServer } from "@/server/wss/stack-list";
 import { setupDockerComposeLogsWebSocketServer } from "@/server/wss/docker-compose-logs";
 import { setupDockerComposeCommandWebSocketServer } from "@/server/wss/docker-compose-command";
 import { env } from "@/env";
@@ -16,6 +17,7 @@ void app.prepare().then(() => {
     void handle(req, res, parsedUrl);
   });
 
+  void setupStackListWebSocketServer(server);
   void setupDockerComposeCommandWebSocketServer(server);
   void setupDockerComposeLogsWebSocketServer(server);
 

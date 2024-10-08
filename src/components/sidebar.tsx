@@ -2,19 +2,20 @@
 
 import { ComposeCreate } from "@/components/compose-create";
 import { buttonVariants } from "@/components/ui/button";
+import { stackListAtom } from "@/lib/atoms";
 import { cn } from "@/lib/utils";
-import { api } from "@/trpc/react";
+import { useAtomValue } from "jotai";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 export function Sidebar() {
   const params = useParams();
-  const [stacks] = api.compose.getStackList.useSuspenseQuery();
+  const stackList = useAtomValue(stackListAtom);
 
   return (
     <div className="flex w-80 flex-col gap-2 border-r p-4">
       <ComposeCreate />
-      {stacks.map((stack) => (
+      {stackList.map((stack) => (
         <Link
           key={stack.name}
           href={`/compose/${stack.name}`}

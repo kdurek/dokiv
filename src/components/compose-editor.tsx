@@ -1,7 +1,6 @@
 "use client";
 
-import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
-import { api } from "@/trpc/react";
+import { composeValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
 import { useAtom, useAtomValue } from "jotai";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
@@ -15,11 +14,14 @@ const CodeEditor = dynamic(
 
 export function ComposeEditor({ composeName }: { composeName: string }) {
   const isEditing = useAtomValue(isEditingAtom);
-  const [stack] = api.compose.getStackFile.useSuspenseQuery({ composeName });
+  const stackList = useAtomValue(stackListAtom);
+  const stack = stackList.find((stack) => stack.name === composeName);
   const [value, setValue] = useAtom(composeValueAtom);
 
   useEffect(() => {
-    setValue(stack);
+    if (!stack) return;
+
+    setValue(stack.stackFile);
   }, [setValue, stack]);
 
   return (
