@@ -42,7 +42,8 @@ function ServiceStatus({
     <Badge
       variant="outline"
       className={cn("bg-gray-500 text-white", {
-        "bg-green-500": service?.status === "running",
+        "bg-green-500":
+          service?.status === "running" || service?.status === "healthy",
         "bg-red-500": service?.status === "exited",
       })}
     >
