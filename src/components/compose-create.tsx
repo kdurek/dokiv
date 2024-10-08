@@ -30,7 +30,7 @@ export function ComposeCreate() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create</Button>
+        <Button className="w-full">Create</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
