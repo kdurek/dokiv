@@ -1,11 +1,7 @@
 "use client";
 
 import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
-import {
-  dockerComposeCommandSocket,
-  dockerComposeLogsSocket,
-  stackListSocket,
-} from "@/lib/socket";
+import { stackSocket } from "@/lib/socket";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -21,7 +17,7 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
 
   const create = async (onSuccess: () => void) => {
     setStatus("loading");
-    stackListSocket.emit("createStack", { composeName }, async (callback) => {
+    stackSocket.emit("createStack", { composeName }, async (callback) => {
       if (callback.status === "success") {
         onSuccess();
         setStatus("success");
@@ -36,7 +32,7 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
 
   const save = async () => {
     setStatus("loading");
-    stackListSocket.emit(
+    stackSocket.emit(
       "saveStack",
       { composeName, stack: value },
       async (callback) => {
@@ -55,13 +51,13 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
 
   const deploy = () => {
     setStatus("loading");
-    dockerComposeCommandSocket.emit(
-      "output",
+    stackSocket.emit(
+      "stackCommand",
       { composeName, command: "deploy" },
       async (callback) => {
         if (callback.status === "success") {
-          stackListSocket.emit("refresh");
-          dockerComposeLogsSocket.emit("output", { composeName });
+          stackSocket.emit("refresh");
+          stackSocket.emit("stackLogs", { composeName });
           setStatus("success");
           toast.success(callback.message);
         }
@@ -75,19 +71,19 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
 
   const saveAndDeploy = () => {
     setStatus("loading");
-    stackListSocket.emit(
+    stackSocket.emit(
       "saveStack",
       { composeName, stack: value },
       async (callback) => {
         if (callback.status === "success") {
-          dockerComposeCommandSocket.emit(
-            "output",
+          stackSocket.emit(
+            "stackCommand",
             { composeName, command: "deploy" },
             async (callback) => {
               if (callback.status === "success") {
                 setIsEditing(false);
-                stackListSocket.emit("refresh");
-                dockerComposeLogsSocket.emit("output", { composeName });
+                stackSocket.emit("refresh");
+                stackSocket.emit("stackLogs", { composeName });
                 setStatus("success");
                 toast.success(callback.message);
               }
@@ -108,13 +104,13 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
 
   const down = () => {
     setStatus("loading");
-    dockerComposeCommandSocket.emit(
-      "output",
+    stackSocket.emit(
+      "stackCommand",
       { composeName, command: "down" },
       async (callback) => {
         if (callback.status === "success") {
-          stackListSocket.emit("refresh");
-          dockerComposeLogsSocket.emit("output", { composeName });
+          stackSocket.emit("refresh");
+          stackSocket.emit("stackLogs", { composeName });
           setStatus("success");
           toast.success(callback.message);
         }
@@ -129,7 +125,7 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
   const remove = () => {
     setStatus("loading");
     router.push("/");
-    stackListSocket.emit("removeStack", { composeName }, async (callback) => {
+    stackSocket.emit("removeStack", { composeName }, async (callback) => {
       if (callback.status === "success") {
         setStatus("success");
         toast.success(callback.message);

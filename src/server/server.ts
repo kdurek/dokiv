@@ -1,10 +1,8 @@
+import { env } from "@/env";
+import { setupStackWebSocketServer } from "@/server/wss/stack";
 import { createServer } from "http";
 import next from "next";
 import { parse } from "url";
-import { setupStackListWebSocketServer } from "@/server/wss/stack-list";
-import { setupDockerComposeLogsWebSocketServer } from "@/server/wss/docker-compose-logs";
-import { setupDockerComposeCommandWebSocketServer } from "@/server/wss/docker-compose-command";
-import { env } from "@/env";
 
 const port = parseInt("3000", 10);
 const dev = env.NODE_ENV !== "production";
@@ -17,9 +15,7 @@ void app.prepare().then(() => {
     void handle(req, res, parsedUrl);
   });
 
-  void setupStackListWebSocketServer(server);
-  void setupDockerComposeCommandWebSocketServer(server);
-  void setupDockerComposeLogsWebSocketServer(server);
+  void setupStackWebSocketServer(server);
 
   server.listen(port);
   console.log(

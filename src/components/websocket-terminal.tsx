@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  dockerComposeCommandSocket,
-  dockerComposeLogsSocket,
-} from "@/lib/socket";
+import { stackSocket } from "@/lib/socket";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
@@ -39,16 +36,16 @@ export function WebsocketTerminal({
       fitAddon.fit();
 
       if (type === "command") {
-        dockerComposeCommandSocket.on("output", (data) => {
+        stackSocket.on("stackCommand", (data) => {
           terminal.write(data);
         });
       }
 
       if (type === "logs") {
-        dockerComposeLogsSocket.emit("output", {
+        stackSocket.emit("stackLogs", {
           composeName,
         });
-        dockerComposeLogsSocket.on("output", (data) => {
+        stackSocket.on("stackLogs", (data) => {
           terminal.write(data);
         });
       }

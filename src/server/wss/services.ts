@@ -3,18 +3,16 @@ import { composeFileExists, getStack } from "@/server/api/utils";
 import { COMPOSE_FILE_NAME, SORT_ORDER } from "@/server/consts";
 import { dockerCompose, type DockerComposeError } from "@/server/docker";
 import type {
-  StackListClientToServerEvents,
-  StackListServerToClientEvents,
-} from "@/server/wss/stack-list";
-import {
-  cachedStackList,
-  updateCachedStackList,
-} from "@/server/wss/stack-list/cache";
+  StackClientToServerEvents,
+  StackServerToClientEvents,
+} from "@/server/wss/stack";
+import { cachedStackList, updateCachedStackList } from "@/server/wss/cache";
+import { spawnTerminal } from "@/server/wss/utils";
 import fs from "node:fs/promises";
 import type { Socket } from "socket.io";
 
 export const sendStackList = async (
-  socket: Socket<StackListClientToServerEvents, StackListServerToClientEvents>,
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
   cache = false,
 ) => {
   if (cache) {
@@ -56,7 +54,7 @@ export const sendStackList = async (
 };
 
 export const createStack = async (
-  socket: Socket<StackListClientToServerEvents, StackListServerToClientEvents>,
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("createStack", async ({ composeName }, callback) => {
     const existingStacks = await fs.readdir(env.STACKS_DIR, {
@@ -88,7 +86,7 @@ export const createStack = async (
 };
 
 export const saveStack = async (
-  socket: Socket<StackListClientToServerEvents, StackListServerToClientEvents>,
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("saveStack", async ({ composeName, stack }, callback) => {
     try {
@@ -122,7 +120,7 @@ export const saveStack = async (
 };
 
 export const removeStack = async (
-  socket: Socket<StackListClientToServerEvents, StackListServerToClientEvents>,
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("removeStack", async ({ composeName }, callback) => {
     try {
@@ -149,6 +147,89 @@ export const removeStack = async (
       callback({
         status: "error",
         message: (error as Error).message,
+      });
+    }
+  });
+};
+
+export const stackLogs = async (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+) => {
+  socket.on("stackLogs", (data) => {
+    const ptyProcess = spawnTerminal(
+      data.composeName,
+      "docker compose logs -f",
+    );
+
+    ptyProcess.onData((data) => {
+      socket.emit("stackLogs", data);
+    });
+
+    socket.on("disconnect", () => {
+      ptyProcess.kill();
+    });
+  });
+};
+
+export const stackCommand = async (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+) => {
+  socket.on("stackCommand", (data, callback) => {
+    if (data.command === "deploy") {
+      const ptyProcess = spawnTerminal(
+        data.composeName,
+        "docker compose up -d --remove-orphans",
+      );
+
+      ptyProcess.onData((data) => {
+        socket.emit("stackCommand", data);
+      });
+
+      ptyProcess.onExit((code) => {
+        if (code.exitCode === 0) {
+          callback({
+            status: "success",
+            message: "Deployed successfully",
+          });
+        } else {
+          callback({
+            status: "error",
+            message: "Failed to deploy",
+          });
+        }
+      });
+
+      socket.on("disconnect", () => {
+        ptyProcess.kill();
+      });
+    }
+
+    if (data.command === "down") {
+      const ptyProcess = spawnTerminal(
+        data.composeName,
+        "docker compose down --remove-orphans",
+      );
+
+      ptyProcess.onData((data) => {
+        socket.emit("stackCommand", data);
+      });
+
+      ptyProcess.onExit((code) => {
+        if (code.exitCode === 0) {
+          callback({
+            status: "success",
+            message: "Downed successfully",
+          });
+        } else {
+          callback({
+            status: "error",
+            message: "Failed to down",
+          });
+        }
+      });
+
+      socket.on("disconnect", () => {
+        ptyProcess.kill();
       });
     }
   });
