@@ -53,6 +53,21 @@ export const sendStackList = async (
   }
 };
 
+export const sendStackLogs = async (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+  data: { composeName: string },
+) => {
+  const ptyProcess = spawnTerminal(data.composeName, "docker compose logs -f");
+
+  ptyProcess.onData((data) => {
+    socket.emit("stackLogs", data);
+  });
+
+  socket.on("disconnect", () => {
+    ptyProcess.kill();
+  });
+};
+
 export const createStack = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
@@ -138,11 +153,11 @@ export const removeStack = async (
       await fs.rm(`${env.STACKS_DIR}/${composeName}`, {
         recursive: true,
       });
+      void sendStackList(socket);
       callback({
         status: "success",
         message: "Removed successfully",
       });
-      void sendStackList(socket);
     } catch (error) {
       callback({
         status: "error",
@@ -156,28 +171,17 @@ export const stackLogs = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("stackLogs", (data) => {
-    const ptyProcess = spawnTerminal(
-      data.composeName,
-      "docker compose logs -f",
-    );
-
-    ptyProcess.onData((data) => {
-      socket.emit("stackLogs", data);
-    });
-
-    socket.on("disconnect", () => {
-      ptyProcess.kill();
-    });
+    void sendStackLogs(socket, data);
   });
 };
 
 export const stackCommand = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
-  socket.on("stackCommand", (data, callback) => {
-    if (data.command === "deploy") {
+  socket.on("stackCommand", ({ composeName, command }, callback) => {
+    if (command === "deploy") {
       const ptyProcess = spawnTerminal(
-        data.composeName,
+        composeName,
         "docker compose up -d --remove-orphans",
       );
 
@@ -187,6 +191,8 @@ export const stackCommand = async (
 
       ptyProcess.onExit((code) => {
         if (code.exitCode === 0) {
+          void sendStackList(socket);
+          void sendStackLogs(socket, { composeName });
           callback({
             status: "success",
             message: "Deployed successfully",
@@ -204,9 +210,9 @@ export const stackCommand = async (
       });
     }
 
-    if (data.command === "down") {
+    if (command === "down") {
       const ptyProcess = spawnTerminal(
-        data.composeName,
+        composeName,
         "docker compose down --remove-orphans",
       );
 
@@ -216,6 +222,8 @@ export const stackCommand = async (
 
       ptyProcess.onExit((code) => {
         if (code.exitCode === 0) {
+          void sendStackList(socket);
+          void sendStackLogs(socket, { composeName });
           callback({
             status: "success",
             message: "Downed successfully",

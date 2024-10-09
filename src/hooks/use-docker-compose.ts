@@ -56,8 +56,6 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
       { composeName, command: "deploy" },
       async (callback) => {
         if (callback.status === "success") {
-          stackSocket.emit("refresh");
-          stackSocket.emit("stackLogs", { composeName });
           setStatus("success");
           toast.success(callback.message);
         }
@@ -82,8 +80,6 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
             async (callback) => {
               if (callback.status === "success") {
                 setIsEditing(false);
-                stackSocket.emit("refresh");
-                stackSocket.emit("stackLogs", { composeName });
                 setStatus("success");
                 toast.success(callback.message);
               }
@@ -109,8 +105,6 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
       { composeName, command: "down" },
       async (callback) => {
         if (callback.status === "success") {
-          stackSocket.emit("refresh");
-          stackSocket.emit("stackLogs", { composeName });
           setStatus("success");
           toast.success(callback.message);
         }
