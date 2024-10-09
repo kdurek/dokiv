@@ -68,7 +68,7 @@ export const sendStackLogs = async (
   });
 };
 
-export const createStack = async (
+export const onCreateStack = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("createStack", async ({ composeName }, callback) => {
@@ -100,7 +100,7 @@ export const createStack = async (
   });
 };
 
-export const saveStack = async (
+export const onSaveStack = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("saveStack", async ({ composeName, stack }, callback) => {
@@ -134,7 +134,7 @@ export const saveStack = async (
   });
 };
 
-export const removeStack = async (
+export const onRemoveStack = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("removeStack", async ({ composeName }, callback) => {
@@ -167,7 +167,7 @@ export const removeStack = async (
   });
 };
 
-export const stackLogs = async (
+export const onStackLogs = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("stackLogs", (data) => {
@@ -175,7 +175,7 @@ export const stackLogs = async (
   });
 };
 
-export const stackCommand = async (
+export const onStackCommand = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
   socket.on("stackCommand", ({ composeName, command }, callback) => {

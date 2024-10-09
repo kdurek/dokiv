@@ -2,12 +2,12 @@ import { type Stack } from "@/server/api/utils";
 import { validateWebSocketRequest } from "@/server/auth/wss";
 import { cachedStackList } from "@/server/wss/cache";
 import {
-  createStack,
-  removeStack,
-  saveStack,
+  onCreateStack,
+  onRemoveStack,
+  onSaveStack,
   sendStackList,
-  stackCommand,
-  stackLogs,
+  onStackCommand,
+  onStackLogs,
 } from "@/server/wss/services";
 import type http from "node:http";
 import { Server } from "socket.io";
@@ -53,10 +53,10 @@ export const setupStackWebSocketServer = (
       void sendStackList(socket);
     });
 
-    void stackLogs(socket);
-    void stackCommand(socket);
-    void createStack(socket);
-    void saveStack(socket);
-    void removeStack(socket);
+    void onStackLogs(socket);
+    void onStackCommand(socket);
+    void onCreateStack(socket);
+    void onSaveStack(socket);
+    void onRemoveStack(socket);
   });
 };
