@@ -1,10 +1,9 @@
 "use client";
 
 import { stackSocket } from "@/lib/socket";
-import { FitAddon } from "@xterm/addon-fit";
-import { Terminal } from "@xterm/xterm";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
+import { useTerminal } from "@/hooks/use-terminal";
 import "@xterm/xterm/css/xterm.css";
 
 export function WebsocketTerminal({
@@ -14,30 +13,13 @@ export function WebsocketTerminal({
   type: "command" | "logs";
   composeName: string;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { ref, instance } = useTerminal();
 
   useEffect(() => {
-    if (containerRef.current) {
-      const terminal = new Terminal({
-        rows: 10,
-        lineHeight: 1.4,
-        convertEol: true,
-        theme: {
-          cursor: "transparent",
-          background: "rgba(0, 0, 0, 0)",
-        },
-      });
-
-      const fitAddon = new FitAddon();
-
-      terminal.loadAddon(fitAddon);
-      terminal.open(containerRef.current);
-
-      fitAddon.fit();
-
+    if (instance) {
       if (type === "command") {
         stackSocket.on("stackCommand", (data) => {
-          terminal.write(data);
+          instance.write(data);
         });
       }
 
@@ -46,15 +28,15 @@ export function WebsocketTerminal({
           composeName,
         });
         stackSocket.on("stackLogs", (data) => {
-          terminal.write(data);
+          instance.write(data);
         });
       }
-
-      return () => {
-        terminal.dispose();
-      };
     }
-  }, [composeName, type]);
+  }, [composeName, type, instance]);
 
-  return <div ref={containerRef} className="rounded-md border p-4" />;
+  return (
+    <div className="overflow-hidden rounded-md border p-4 pr-0">
+      <div ref={ref} />
+    </div>
+  );
 }
