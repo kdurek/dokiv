@@ -76,15 +76,25 @@ export const onCreateStack = async (
       withFileTypes: true,
       encoding: "utf-8",
     });
+
+    const validateName = /^[a-z0-9-_]+$/.exec(composeName);
+    if (!validateName) {
+      return callback({
+        status: "error",
+        message: "Invalid stack name",
+      });
+    }
+
     const isNameUnique = existingStacks.every(
       (entry) => entry.name !== composeName,
     );
     if (!isNameUnique) {
-      callback({
+      return callback({
         status: "error",
         message: "Stack name must be unique",
       });
     }
+
     await fs.mkdir(`${env.STACKS_DIR}/${composeName}`);
     await fs.writeFile(
       `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
@@ -93,7 +103,7 @@ export const onCreateStack = async (
     image: traefik/whoami`,
     );
     void sendStackList(socket);
-    callback({
+    return callback({
       status: "success",
       message: "Created successfully",
     });
@@ -109,7 +119,7 @@ export const onSaveStack = async (
         configAsString: stack,
       });
     } catch (error) {
-      callback({
+      return callback({
         status: "error",
         message: (error as DockerComposeError).err,
       });
@@ -121,16 +131,17 @@ export const onSaveStack = async (
         stack,
       );
       void sendStackList(socket);
-      callback({
-        status: "success",
-        message: "Saved successfully",
-      });
     } catch (error) {
-      callback({
+      return callback({
         status: "error",
         message: (error as Error).message,
       });
     }
+
+    return callback({
+      status: "success",
+      message: "Saved successfully",
+    });
   });
 };
 
@@ -143,7 +154,7 @@ export const onRemoveStack = async (
         cwd: `${env.STACKS_DIR}/${composeName}`,
       });
     } catch (error) {
-      callback({
+      return callback({
         status: "error",
         message: (error as DockerComposeError).err,
       });
@@ -154,12 +165,12 @@ export const onRemoveStack = async (
         recursive: true,
       });
       void sendStackList(socket);
-      callback({
+      return callback({
         status: "success",
         message: "Removed successfully",
       });
     } catch (error) {
-      callback({
+      return callback({
         status: "error",
         message: (error as Error).message,
       });
@@ -193,12 +204,12 @@ export const onStackCommand = async (
         if (code.exitCode === 0) {
           void sendStackList(socket);
           void sendStackLogs(socket, { composeName });
-          callback({
+          return callback({
             status: "success",
             message: "Deployed successfully",
           });
         } else {
-          callback({
+          return callback({
             status: "error",
             message: "Failed to deploy",
           });
@@ -224,12 +235,12 @@ export const onStackCommand = async (
         if (code.exitCode === 0) {
           void sendStackList(socket);
           void sendStackLogs(socket, { composeName });
-          callback({
+          return callback({
             status: "success",
             message: "Downed successfully",
           });
         } else {
-          callback({
+          return callback({
             status: "error",
             message: "Failed to down",
           });
