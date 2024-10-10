@@ -1,4 +1,8 @@
-import { COMPOSE_FILE_NAME, COMPOSE_FILE_NAMES } from "@/server/consts";
+import {
+  COMPOSE_FILE_NAME,
+  COMPOSE_FILE_NAMES,
+  ENV_FILE_NAME,
+} from "@/server/consts";
 import path from "path";
 import fs from "fs";
 import fsAsync from "fs/promises";
@@ -16,6 +20,7 @@ export type Stack = {
   }[];
   stackFile: string;
   parsedStackFile: DockerCompose;
+  envFile: string;
 };
 
 export function fileExists(filename: string): Promise<boolean> {
@@ -61,10 +66,34 @@ export function getStackServicesStatus(services: Stack["services"]) {
 }
 
 export async function getStackFile(stackDir: string, stackName: string) {
-  return fsAsync.readFile(
-    `${stackDir}/${stackName}/${COMPOSE_FILE_NAME}`,
-    "utf-8",
-  );
+  try {
+    return fsAsync.readFile(
+      `${stackDir}/${stackName}/${COMPOSE_FILE_NAME}`,
+      "utf-8",
+    );
+  } catch {
+    return "";
+  }
+}
+
+export async function getParsedStackFile(stackFile: string) {
+  try {
+    return parse(stackFile) as DockerCompose;
+  } catch {
+    return {} as DockerCompose;
+  }
+}
+
+export async function getEnvFile(stackDir: string, stackName: string) {
+  try {
+    const envFile = await fsAsync.readFile(
+      `${stackDir}/${stackName}/${ENV_FILE_NAME}`,
+      "utf-8",
+    );
+    return envFile;
+  } catch {
+    return "";
+  }
 }
 
 export async function getStack(
@@ -83,15 +112,20 @@ export async function getStack(
     }),
   );
 
+  const status = getStackServicesStatus(services);
+
   const stackFile = await getStackFile(stackDir, stackName);
 
-  const parsedStackFile = parse(stackFile) as DockerCompose;
+  const envFile = await getEnvFile(stackDir, stackName);
+
+  const parsedStackFile = await getParsedStackFile(stackFile);
 
   return {
     name: stackName,
-    status: getStackServicesStatus(services),
+    status,
     services,
     stackFile,
     parsedStackFile,
+    envFile,
   };
 }

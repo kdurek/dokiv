@@ -1,6 +1,6 @@
 "use client";
 
-import { composeValueAtom, isEditingAtom } from "@/lib/atoms";
+import { stackValueAtom, envValueAtom, isEditingAtom } from "@/lib/atoms";
 import { stackSocket } from "@/lib/socket";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,8 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const router = useRouter();
-  const value = useAtomValue(composeValueAtom);
+  const stackFile = useAtomValue(stackValueAtom);
+  const envFile = useAtomValue(envValueAtom);
   const setIsEditing = useSetAtom(isEditingAtom);
 
   const create = async (onSuccess: () => void) => {
@@ -34,7 +35,7 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
     setStatus("loading");
     stackSocket.emit(
       "saveStack",
-      { composeName, stack: value },
+      { composeName, stackFile, envFile },
       async (callback) => {
         if (callback.status === "success") {
           setIsEditing(false);
@@ -71,7 +72,7 @@ export function useDockerCompose({ composeName }: { composeName: string }) {
     setStatus("loading");
     stackSocket.emit(
       "saveStack",
-      { composeName, stack: value },
+      { composeName, stackFile, envFile },
       async (callback) => {
         if (callback.status === "success") {
           stackSocket.emit(

@@ -1,6 +1,6 @@
 import { env } from "@/env";
 import { composeFileExists, getStack } from "@/server/api/utils";
-import { COMPOSE_FILE_NAME, SORT_ORDER } from "@/server/consts";
+import { COMPOSE_FILE_NAME, ENV_FILE_NAME, SORT_ORDER } from "@/server/consts";
 import { dockerCompose, type DockerComposeError } from "@/server/docker";
 import type {
   StackClientToServerEvents,
@@ -113,36 +113,51 @@ export const onCreateStack = async (
 export const onSaveStack = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
-  socket.on("saveStack", async ({ composeName, stack }, callback) => {
-    try {
-      await dockerCompose.config({
-        configAsString: stack,
-      });
-    } catch (error) {
-      return callback({
-        status: "error",
-        message: (error as DockerComposeError).err,
-      });
-    }
+  socket.on(
+    "saveStack",
+    async ({ composeName, stackFile, envFile }, callback) => {
+      try {
+        await dockerCompose.config({
+          configAsString: stackFile,
+        });
+      } catch (error) {
+        return callback({
+          status: "error",
+          message: (error as DockerComposeError).err,
+        });
+      }
 
-    try {
-      await fs.writeFile(
-        `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
-        stack,
-      );
-      void sendStackList(socket);
-    } catch (error) {
-      return callback({
-        status: "error",
-        message: (error as Error).message,
-      });
-    }
+      try {
+        await fs.writeFile(
+          `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
+          stackFile,
+        );
+      } catch (error) {
+        return callback({
+          status: "error",
+          message: (error as Error).message,
+        });
+      }
 
-    return callback({
-      status: "success",
-      message: "Saved successfully",
-    });
-  });
+      try {
+        await fs.writeFile(
+          `${env.STACKS_DIR}/${composeName}/${ENV_FILE_NAME}`,
+          envFile,
+        );
+        void sendStackList(socket);
+      } catch (error) {
+        return callback({
+          status: "error",
+          message: (error as Error).message,
+        });
+      }
+
+      return callback({
+        status: "success",
+        message: "Saved successfully",
+      });
+    },
+  );
 };
 
 export const onRemoveStack = async (

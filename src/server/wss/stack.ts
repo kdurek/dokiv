@@ -30,7 +30,7 @@ export interface StackClientToServerEvents {
   refresh: () => void;
   createStack: (data: { composeName: string }, callback: Callback) => void;
   saveStack: (
-    data: { composeName: string; stack: string },
+    data: { composeName: string; stackFile: string; envFile: string },
     callback: Callback,
   ) => void;
   removeStack: (data: { composeName: string }, callback: Callback) => void;

@@ -17,4 +17,6 @@ export const stackListEffectAtom = atomEffect((_, set) => {
 
 export const isEditingAtom = atom(false);
 
-export const composeValueAtom = atom("");
+export const stackValueAtom = atom("");
+
+export const envValueAtom = atom("");

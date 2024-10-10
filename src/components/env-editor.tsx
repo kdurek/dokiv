@@ -1,6 +1,6 @@
 "use client";
 
-import { stackValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
+import { envValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
 import { useAtom, useAtomValue } from "jotai";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
@@ -12,24 +12,25 @@ const CodeEditor = dynamic(
   },
 );
 
-export function ComposeEditor({ composeName }: { composeName: string }) {
+export function EnvEditor({ composeName }: { composeName: string }) {
   const isEditing = useAtomValue(isEditingAtom);
   const stackList = useAtomValue(stackListAtom);
   const stack = stackList.find((stack) => stack.name === composeName);
-  const [stackValue, setStackValue] = useAtom(stackValueAtom);
+  const [envValue, setEnvValue] = useAtom(envValueAtom);
 
   useEffect(() => {
     if (!stack) return;
 
-    setStackValue(stack.stackFile);
-  }, [setStackValue, stack]);
+    setEnvValue(stack.envFile);
+  }, [setEnvValue, stack]);
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-2xl">Stack</h2>
+      <h2 className="text-2xl">Env</h2>
       <CodeEditor
-        value={stackValue}
-        onChange={setStackValue}
+        language="properties"
+        value={envValue}
+        onChange={setEnvValue}
         editable={isEditing}
       />
     </div>

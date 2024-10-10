@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { StreamLanguage } from "@codemirror/language";
+import { properties } from "@codemirror/legacy-modes/mode/properties";
 import { yaml } from "@codemirror/lang-yaml";
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import type { ReactCodeMirrorProps } from "@uiw/react-codemirror";
@@ -8,7 +10,7 @@ import { useTheme } from "next-themes";
 interface Props extends ReactCodeMirrorProps {
   wrapperClassName?: string;
   disabled?: boolean;
-  language?: "yaml";
+  language?: "yaml" | "properties";
 }
 
 export function CodeEditor({
@@ -20,10 +22,13 @@ export function CodeEditor({
 }: Props) {
   const { theme } = useTheme();
 
+  const extensions =
+    language === "yaml" ? [yaml()] : [StreamLanguage.define(properties)];
+
   return (
     <div
       className={cn(
-        "relative size-full overflow-auto rounded-md border",
+        "relative size-full min-h-40 overflow-auto rounded-md border",
         wrapperClassName,
       )}
     >
@@ -37,7 +42,7 @@ export function CodeEditor({
         theme={theme === "dark" ? githubDark : githubLight}
         height="100%"
         width="100%"
-        extensions={[yaml()]}
+        extensions={extensions}
         lang={language}
         editable={editable}
         {...props}

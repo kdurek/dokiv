@@ -3,14 +3,14 @@
 import { ActionsRemove } from "@/components/actions-remove";
 import { Button } from "@/components/ui/button";
 import { useDockerCompose } from "@/hooks/use-docker-compose";
-import { composeValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
+import { stackValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function ComposeActions({ composeName }: { composeName: string }) {
   const stackList = useAtomValue(stackListAtom);
   const stack = stackList.find((stack) => stack.name === composeName);
   const [isEditing, setIsEditing] = useAtom(isEditingAtom);
-  const setValue = useSetAtom(composeValueAtom);
+  const setStackValue = useSetAtom(stackValueAtom);
   const { status, save, deploy, saveAndDeploy, down, remove } =
     useDockerCompose({
       composeName,
@@ -19,7 +19,7 @@ export function ComposeActions({ composeName }: { composeName: string }) {
   const handleCancel = () => {
     if (!stack) return;
 
-    setValue(stack.stackFile);
+    setStackValue(stack.stackFile);
     setIsEditing(false);
   };
 

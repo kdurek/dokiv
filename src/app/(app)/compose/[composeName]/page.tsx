@@ -3,6 +3,7 @@ import { ComposeCommand } from "@/components/compose-command";
 import { ComposeEditor } from "@/components/compose-editor";
 import { ComposeLogs } from "@/components/compose-logs";
 import { ComposeServices } from "@/components/compose-services";
+import { EnvEditor } from "@/components/env-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,9 @@ export default async function ComposePage({
         <div className="w-full lg:w-80">
           <ComposeServices composeName={composeName} />
         </div>
-        <div className="lg:flex-1">
+        <div className="flex flex-col gap-4 lg:flex-1">
           <ComposeEditor composeName={composeName} />
+          <EnvEditor composeName={composeName} />
         </div>
       </div>
       <ComposeCommand composeName={composeName} />
