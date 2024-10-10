@@ -25,7 +25,7 @@ export function ComposeEditor({ composeName }: { composeName: string }) {
   }, [setValue, stack]);
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <h2 className="text-2xl">Editor</h2>
       <CodeEditor value={value} onChange={setValue} editable={isEditing} />
     </div>

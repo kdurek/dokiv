@@ -11,7 +11,7 @@ export function ComposeServices({ composeName }: { composeName: string }) {
   const stack = stackList.find((stack) => stack.name === composeName);
 
   return (
-    <div className="flex w-80 flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <h2 className="text-2xl">Services</h2>
       {stack &&
         Object.entries(stack.parsedStackFile.services)?.map(

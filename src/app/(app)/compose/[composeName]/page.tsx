@@ -12,14 +12,18 @@ export default async function ComposePage({
   params: { composeName: string };
 }) {
   return (
-    <main className="flex-1 space-y-4 overflow-y-auto p-4">
-      <div className="flex justify-between gap-4">
+    <main className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex flex-wrap justify-between gap-4">
         <h2 className="text-4xl">{composeName}</h2>
         <ComposeActions composeName={composeName} />
       </div>
-      <div className="flex gap-4">
-        <ComposeServices composeName={composeName} />
-        <ComposeEditor composeName={composeName} />
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="w-full lg:w-80">
+          <ComposeServices composeName={composeName} />
+        </div>
+        <div className="lg:flex-1">
+          <ComposeEditor composeName={composeName} />
+        </div>
       </div>
       <ComposeCommand composeName={composeName} />
       <ComposeLogs composeName={composeName} />

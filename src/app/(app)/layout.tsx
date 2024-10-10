@@ -17,7 +17,9 @@ export default async function AppLayout({
       <div className="relative min-h-screen">
         <Navbar />
         <div className="flex h-[calc(100dvh-64px)]">
-          <Sidebar />
+          <div className="hidden w-80 sm:block">
+            <Sidebar />
+          </div>
           {children}
         </div>
       </div>
