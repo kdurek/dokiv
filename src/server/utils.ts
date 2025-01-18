@@ -41,6 +41,16 @@ export async function composeFileExists(
   return false;
 }
 
+export async function getComposeFileName(stackDir: string, stackName: string) {
+  for (const filename of COMPOSE_FILE_NAMES) {
+    const composeFile = path.join(stackDir, stackName, filename);
+    if (await fileExists(composeFile)) {
+      return filename;
+    }
+  }
+  return "";
+}
+
 export function getStackServicesStatus(services: DockerService[]) {
   if (
     services.length &&

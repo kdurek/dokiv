@@ -1,5 +1,10 @@
 import { env } from "@/env";
-import { composeFileExists, getStack, type Stack } from "@/server/utils";
+import {
+  composeFileExists,
+  getComposeFileName,
+  getStack,
+  type Stack,
+} from "@/server/utils";
 import { COMPOSE_FILE_NAME, ENV_FILE_NAME, SORT_ORDER } from "@/server/consts";
 import { dockerCompose, type DockerComposeError } from "@/server/docker";
 import type {
@@ -153,8 +158,12 @@ export const onSaveCompose = async (
     }
 
     try {
+      const composeFileName = await getComposeFileName(
+        env.STACKS_DIR,
+        composeName,
+      );
       await fs.writeFile(
-        `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
+        `${env.STACKS_DIR}/${composeName}/${composeFileName}`,
         composeFile,
       );
       void sendStackList(socket);
