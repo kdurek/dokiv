@@ -32,7 +32,7 @@ export function AppSidebar({
         items: stackList.map((stack) => ({
           title: stack.name,
           url: `/compose/${stack.name}`,
-          status: stack.status,
+          state: stack.state,
         })),
       },
     ],

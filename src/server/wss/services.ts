@@ -37,7 +37,10 @@ export const sendStackList = async (
       .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
         try {
-          const hasComposeFile = await composeFileExists(env.STACKS_DIR, entry.name);
+          const hasComposeFile = await composeFileExists(
+            env.STACKS_DIR,
+            entry.name,
+          );
           if (!hasComposeFile) {
             logger.warn(`No compose file found for stack ${entry.name}`);
             return null;
@@ -53,7 +56,7 @@ export const sendStackList = async (
     const stackList = (await Promise.all(stackPromises))
       .filter((stack): stack is Stack => stack !== null)
       .sort(
-        (a, b) => SORT_ORDER.indexOf(a.status) - SORT_ORDER.indexOf(b.status),
+        (a, b) => SORT_ORDER.indexOf(a.state) - SORT_ORDER.indexOf(b.state),
       );
 
     updateCachedStackList(stackList);

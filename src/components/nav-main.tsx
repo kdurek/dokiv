@@ -22,7 +22,7 @@ export const NavMain = memo(function NavMain({
     items?: {
       title: string;
       url: string;
-      status: string;
+      state: string;
     }[];
   }[];
 }) {
@@ -43,7 +43,7 @@ export const NavMain = memo(function NavMain({
                       className="flex justify-between gap-2"
                     >
                       {item.title}
-                      <StackStatus status={item.status} />
+                      <StackStatus status={item.state} />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -60,8 +60,9 @@ const StackStatus = memo(function StackStatus({ status }: { status: string }) {
   return (
     <div
       className={cn("size-4 rounded-full bg-gray-500", {
-        "bg-green-500": status === "running",
-        "bg-red-500": status === "exited",
+        "bg-red-500": status === "unhealthy",
+        "bg-orange-500": status === "warning",
+        "bg-green-500": status === "healthy",
       })}
     />
   );

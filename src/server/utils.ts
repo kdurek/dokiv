@@ -1,23 +1,15 @@
-import {
-  COMPOSE_FILE_NAME,
-  COMPOSE_FILE_NAMES,
-  ENV_FILE_NAME,
-} from "@/server/consts";
+import { COMPOSE_FILE_NAMES, ENV_FILE_NAME } from "@/server/consts";
 import path from "path";
 import fs from "fs";
 import fsAsync from "fs/promises";
-import { dockerCompose } from "@/server/docker";
 import { parse } from "yaml";
-import type { DockerCompose } from "@/lib/types";
-import type { DockerComposePsResultService } from "docker-compose";
+import type { DockerCompose, DockerService } from "@/lib/types";
+import { execa } from "execa";
 
 export type Stack = {
   name: string;
-  status: DockerComposePsResultService["state"];
-  services: {
-    name: DockerComposePsResultService["name"];
-    status: DockerComposePsResultService["state"];
-  }[];
+  state: string;
+  services: DockerService[];
   stackFile: string;
   parsedStackFile: DockerCompose;
   envFile: string;
@@ -49,18 +41,24 @@ export async function composeFileExists(
   return false;
 }
 
-export function getStackServicesStatus(services: Stack["services"]) {
+export function getStackServicesStatus(services: DockerService[]) {
   if (
     services.length &&
-    services.every((service) => service.status === "running")
+    services.some((service) => service.State === "exited")
   ) {
-    return "running";
+    return "unhealthy";
   }
   if (
     services.length &&
-    services.some((service) => service.status === "exited")
+    services.some((service) => service.State === "paused")
   ) {
-    return "exited";
+    return "warning";
+  }
+  if (
+    services.length &&
+    services.every((service) => service.State === "running")
+  ) {
+    return "healthy";
   }
   return "unknown";
 }
@@ -103,19 +101,30 @@ export async function getStack(
   stackDir: string,
   stackName: string,
 ): Promise<Stack> {
-  const composeList = await dockerCompose.ps({
-    cwd: `${stackDir}/${stackName}`,
-    commandOptions: [["--format", "json"]],
+  const { stdout: servicesList } = (await execa(
+    "docker",
+    ["compose", "ps", "--format", "json"],
+    {
+      cwd: `${stackDir}/${stackName}`,
+      stdout: {
+        transform: function* (line: unknown) {
+          if (typeof line === "string") {
+            yield JSON.parse(line);
+          }
+        },
+        objectMode: true,
+      },
+    },
+  )) as { stdout: DockerService[] };
+
+  const services = servicesList.map((service) => {
+    return {
+      Service: service.Service,
+      State: service.Health === "" ? service.State : service.Health,
+    };
   });
 
-  const services: Stack["services"] = composeList.data.services.map(
-    (service) => ({
-      name: service.name,
-      status: service.state,
-    }),
-  );
-
-  const status = getStackServicesStatus(services);
+  const state = getStackServicesStatus(services);
 
   const stackFile = await getStackFile(stackDir, stackName);
 
@@ -125,7 +134,7 @@ export async function getStack(
 
   return {
     name: stackName,
-    status,
+    state,
     services,
     stackFile,
     parsedStackFile,
