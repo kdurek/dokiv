@@ -2,7 +2,6 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -12,9 +11,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useRemoveStack } from "@/hooks/stack/use-remove-stack";
 import { cn } from "@/lib/utils";
 
-export function ActionsRemove({ onClick }: { onClick: () => void }) {
+export function ActionsRemove({ composeName }: { composeName: string }) {
+  const { status, remove } = useRemoveStack();
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -30,12 +32,17 @@ export function ActionsRemove({ onClick }: { onClick: () => void }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onClick}
+          <Button
+            onClick={() =>
+              remove({
+                composeName,
+              })
+            }
             className={cn(buttonVariants({ variant: "destructive" }))}
+            disabled={status === "loading"}
           >
             Continue
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -1,7 +1,7 @@
 "use client";
 
 import { stackSocket } from "@/lib/socket";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 import { useTerminal } from "@/hooks/use-terminal";
 import "@xterm/xterm/css/xterm.css";
@@ -15,24 +15,29 @@ export function WebsocketTerminal({
 }) {
   const { ref, instance } = useTerminal();
 
-  useEffect(() => {
-    if (instance) {
-      if (type === "command") {
-        stackSocket.on("stackCommand", (data) => {
-          instance.write(data);
-        });
-      }
+  const handleWrite = useCallback(
+    (data: string) => {
+      instance?.write(data);
+    },
+    [instance],
+  );
 
-      if (type === "logs") {
-        stackSocket.emit("stackLogs", {
-          composeName,
-        });
-        stackSocket.on("stackLogs", (data) => {
-          instance.write(data);
-        });
-      }
+  useEffect(() => {
+    if (!instance) return;
+
+    if (type === "logs") {
+      stackSocket.emit("stackLogs", { composeName });
+      stackSocket.on("stackLogs", handleWrite);
+      return () => {
+        stackSocket.off("stackLogs", handleWrite);
+      };
     }
-  }, [composeName, type, instance]);
+
+    stackSocket.on("stackCommand", handleWrite);
+    return () => {
+      stackSocket.off("stackCommand", handleWrite);
+    };
+  }, [composeName, type, instance, handleWrite]);
 
   return (
     <div className="overflow-hidden rounded-md border p-4 pr-0">

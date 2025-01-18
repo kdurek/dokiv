@@ -1,16 +1,12 @@
 {
-	"extends": "./tsconfig.json",
-	"compilerOptions": {
-		"module": "CommonJS",
-		"outDir": "dist/",
-		"target": "ESNext",
-		"isolatedModules": false,
-		"noEmit": false,
-		"moduleResolution": "Node",
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["./src/*"]
-		}
-	},
-	"include": ["next-env.d.ts", "./src/server/**/*"]
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist",
+    "target": "ESNext",
+    "isolatedModules": false,
+    "noEmit": false,
+    "moduleResolution": "nodenext"
+  },
+  "include": ["next-env.d.ts", "src/server/**/*"]
 }

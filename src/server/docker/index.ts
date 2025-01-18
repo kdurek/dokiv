@@ -1,5 +1,5 @@
 import Docker from "dockerode";
-import { v2 as compose } from "docker-compose";
+import compose from "docker-compose";
 
 export const docker = new Docker();
 

@@ -1,55 +1,65 @@
 import { env } from "@/env";
-import { composeFileExists, getStack } from "@/server/api/utils";
+import { composeFileExists, getStack, type Stack } from "@/server/api/utils";
 import { COMPOSE_FILE_NAME, ENV_FILE_NAME, SORT_ORDER } from "@/server/consts";
 import { dockerCompose, type DockerComposeError } from "@/server/docker";
 import type {
   StackClientToServerEvents,
   StackServerToClientEvents,
 } from "@/server/wss/stack";
-import { cachedStackList, updateCachedStackList } from "@/server/wss/cache";
-import { spawnTerminal } from "@/server/wss/utils";
+import { getCachedStackList, updateCachedStackList } from "@/server/wss/cache";
+import {
+  spawnTerminal,
+  addSocket,
+  broadcastToAll,
+  removeSocket,
+} from "@/server/wss/utils";
 import fs from "node:fs/promises";
 import type { Socket } from "socket.io";
+import { logger } from "@/server/utils/logger";
 
 export const sendStackList = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
   cache = false,
 ) => {
-  if (cache) {
-    socket.emit("stackList", cachedStackList);
-    return;
-  }
-
   try {
-    const entries = (
-      await fs.readdir(env.STACKS_DIR, {
-        withFileTypes: true,
-        encoding: "utf-8",
-      })
-    ).filter((entry) => entry.isDirectory());
-    const stackList = await Promise.all(
-      entries.map(async (entry) => {
+    const cachedList = getCachedStackList();
+    if (cache && cachedList && cachedList.length > 0) {
+      socket.emit("stackList", cachedList);
+      return;
+    }
+
+    const entries = await fs.readdir(env.STACKS_DIR, {
+      withFileTypes: true,
+      encoding: "utf-8",
+    });
+
+    const stackPromises = entries
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry) => {
         try {
-          // Skip if the directory does not contain a compose file
           if (!(await composeFileExists(env.STACKS_DIR, entry.name))) {
-            return;
+            return null;
           }
           return getStack(env.STACKS_DIR, entry.name);
         } catch (error) {
-          console.error((error as Error).message);
+          logger.error(`Failed to get stack ${entry.name}:`, error);
+          return null;
         }
-      }),
-    );
-    const result = stackList
-      .filter((stack) => stack !== undefined)
+      });
+
+    const stackList = (await Promise.all(stackPromises))
+      .filter((stack): stack is Stack => stack !== null)
       .sort(
         (a, b) => SORT_ORDER.indexOf(a.status) - SORT_ORDER.indexOf(b.status),
       );
-    updateCachedStackList(result);
-    socket.emit("stackList", result);
-    return result;
+
+    updateCachedStackList(stackList);
+    broadcastToAll("stackList", stackList);
+    return stackList;
   } catch (error) {
-    console.error((error as Error).message);
+    logger.error("Failed to send stack list:", error);
+    socket.emit("stackList", []);
+    throw error; // Re-throw for upstream handling
   }
 };
 
@@ -57,15 +67,26 @@ export const sendStackLogs = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
   data: { composeName: string },
 ) => {
-  const ptyProcess = spawnTerminal(data.composeName, "docker compose logs -f");
+  let ptyProcess: ReturnType<typeof spawnTerminal> | undefined;
 
-  ptyProcess.onData((data) => {
-    socket.emit("stackLogs", data);
-  });
+  try {
+    ptyProcess = spawnTerminal(
+      data.composeName,
+      "docker compose logs -f --tail 100",
+    );
 
-  socket.on("disconnect", () => {
-    ptyProcess.kill();
-  });
+    ptyProcess.onData((data) => {
+      socket.emit("stackLogs", data);
+    });
+
+    socket.on("disconnect", () => {
+      ptyProcess?.kill();
+    });
+  } catch (error) {
+    logger.error(`Failed to send stack logs for ${data.composeName}:`, error);
+    socket.emit("error", { message: "Failed to fetch logs" });
+    ptyProcess?.kill();
+  }
 };
 
 export const onCreateStack = async (
@@ -110,54 +131,61 @@ export const onCreateStack = async (
   });
 };
 
-export const onSaveStack = async (
+export const onSaveCompose = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
-  socket.on(
-    "saveStack",
-    async ({ composeName, stackFile, envFile }, callback) => {
-      try {
-        await dockerCompose.config({
-          configAsString: stackFile,
-        });
-      } catch (error) {
-        return callback({
-          status: "error",
-          message: (error as DockerComposeError).err,
-        });
-      }
+  socket.on("saveCompose", async ({ composeName, composeFile }, callback) => {
+    try {
+      await dockerCompose.config({
+        configAsString: composeFile,
+      });
+    } catch (error) {
+      return callback({
+        status: "error",
+        message: (error as DockerComposeError).err,
+      });
+    }
 
-      try {
-        await fs.writeFile(
-          `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
-          stackFile,
-        );
-      } catch (error) {
-        return callback({
-          status: "error",
-          message: (error as Error).message,
-        });
-      }
-
-      try {
-        await fs.writeFile(
-          `${env.STACKS_DIR}/${composeName}/${ENV_FILE_NAME}`,
-          envFile,
-        );
-        void sendStackList(socket);
-      } catch (error) {
-        return callback({
-          status: "error",
-          message: (error as Error).message,
-        });
-      }
-
+    try {
+      await fs.writeFile(
+        `${env.STACKS_DIR}/${composeName}/${COMPOSE_FILE_NAME}`,
+        composeFile,
+      );
+      void sendStackList(socket);
       return callback({
         status: "success",
-        message: "Saved successfully",
+        message: "Compose file saved successfully",
       });
-    },
-  );
+    } catch (error) {
+      return callback({
+        status: "error",
+        message: (error as Error).message,
+      });
+    }
+  });
+};
+
+export const onSaveEnv = async (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+) => {
+  socket.on("saveEnv", async ({ composeName, envFile }, callback) => {
+    try {
+      await fs.writeFile(
+        `${env.STACKS_DIR}/${composeName}/${ENV_FILE_NAME}`,
+        envFile,
+      );
+      void sendStackList(socket);
+      return callback({
+        status: "success",
+        message: "Env file saved successfully",
+      });
+    } catch (error) {
+      return callback({
+        status: "error",
+        message: (error as Error).message,
+      });
+    }
+  });
 };
 
 export const onRemoveStack = async (
@@ -193,6 +221,15 @@ export const onRemoveStack = async (
   });
 };
 
+export const onStackList = async (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+) => {
+  socket.on("stackList", () => {
+    const cachedList = getCachedStackList();
+    void sendStackList(socket, cachedList !== null && cachedList.length > 0);
+  });
+};
+
 export const onStackLogs = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
 ) => {
@@ -211,7 +248,10 @@ export const onStackCommand = async (
         "docker compose up -d --remove-orphans",
       );
 
+      let error = "";
+
       ptyProcess.onData((data) => {
+        error = data;
         socket.emit("stackCommand", data);
       });
 
@@ -226,7 +266,7 @@ export const onStackCommand = async (
         } else {
           return callback({
             status: "error",
-            message: "Failed to deploy",
+            message: error,
           });
         }
       });
@@ -267,4 +307,18 @@ export const onStackCommand = async (
       });
     }
   });
+};
+
+// Add connection handling at the start of your socket setup
+export const handleConnection = (
+  socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
+) => {
+  addSocket(socket);
+
+  socket.on("disconnect", () => {
+    removeSocket(socket);
+  });
+
+  // Initialize the client with current data
+  void sendStackList(socket, true);
 };

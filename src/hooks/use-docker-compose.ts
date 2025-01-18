@@ -1,144 +1,178 @@
 "use client";
 
-import { stackValueAtom, envValueAtom, isEditingAtom } from "@/lib/atoms";
+type Status = "idle" | "loading" | "success" | "error";
+type SocketCallback = {
+  status: "success" | "error";
+  message: string;
+};
+
 import { stackSocket } from "@/lib/socket";
-import { useAtomValue, useSetAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function useDockerCompose({ composeName }: { composeName: string }) {
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
+const handleSocketResponse = (
+  callback: SocketCallback,
+  setStatus: (status: "idle" | "loading" | "success" | "error") => void,
+  onSuccess?: () => void,
+  onError?: () => void,
+) => {
+  if (callback.status === "success") {
+    onSuccess?.();
+    setStatus("success");
+    toast.success(callback.message);
+  } else {
+    onError?.();
+    setStatus("error");
+    toast.error(callback.message);
+  }
+};
+
+export function useDockerCompose() {
+  const [status, setStatus] = useState<Status>("idle");
   const router = useRouter();
-  const stackFile = useAtomValue(stackValueAtom);
-  const envFile = useAtomValue(envValueAtom);
-  const setIsEditing = useSetAtom(isEditingAtom);
 
-  const create = async (onSuccess: () => void) => {
+  const create = async (
+    data: {
+      name: string;
+    },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
     setStatus("loading");
-    stackSocket.emit("createStack", { composeName }, async (callback) => {
-      if (callback.status === "success") {
-        onSuccess();
-        setStatus("success");
-        toast.success(callback.message);
-      }
-      if (callback.status === "error") {
-        setStatus("error");
-        toast.error(callback.message);
-      }
-    });
-  };
-
-  const save = async () => {
-    setStatus("loading");
-    stackSocket.emit(
-      "saveStack",
-      { composeName, stackFile, envFile },
-      async (callback) => {
-        if (callback.status === "success") {
-          setIsEditing(false);
-          setStatus("success");
-          toast.success(callback.message);
-        }
-        if (callback.status === "error") {
-          setStatus("error");
-          toast.error(callback.message);
-        }
-      },
+    stackSocket.emit("createStack", { composeName: data.name }, (callback) =>
+      handleSocketResponse(
+        callback,
+        setStatus,
+        () => options?.onSuccess?.(),
+        () => options?.onError?.(),
+      ),
     );
   };
 
-  const deploy = () => {
+  const saveCompose = async (
+    data: {
+      composeName: string;
+      composeFile: string;
+    },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
     setStatus("loading");
     stackSocket.emit(
-      "stackCommand",
-      { composeName, command: "deploy" },
-      async (callback) => {
-        if (callback.status === "success") {
-          setStatus("success");
-          toast.success(callback.message);
-        }
-        if (callback.status === "error") {
-          setStatus("error");
-          toast.error(callback.message);
-        }
-      },
+      "saveCompose",
+      { composeName: data.composeName, composeFile: data.composeFile },
+      (callback) =>
+        handleSocketResponse(
+          callback,
+          setStatus,
+          () => options?.onSuccess?.(),
+          () => options?.onError?.(),
+        ),
     );
   };
 
-  const saveAndDeploy = () => {
+  const saveEnv = async (
+    data: {
+      composeName: string;
+      envFile: string;
+    },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
     setStatus("loading");
     stackSocket.emit(
-      "saveStack",
-      { composeName, stackFile, envFile },
-      async (callback) => {
-        if (callback.status === "success") {
-          stackSocket.emit(
-            "stackCommand",
-            { composeName, command: "deploy" },
-            async (callback) => {
-              if (callback.status === "success") {
-                setIsEditing(false);
-                setStatus("success");
-                toast.success(callback.message);
-              }
-              if (callback.status === "error") {
-                setStatus("error");
-                toast.error(callback.message);
-              }
-            },
-          );
-        }
-        if (callback.status === "error") {
-          setStatus("error");
-          toast.error(callback.message);
-        }
-      },
+      "saveEnv",
+      { composeName: data.composeName, envFile: data.envFile },
+      (callback) =>
+        handleSocketResponse(
+          callback,
+          setStatus,
+          () => options?.onSuccess?.(),
+          () => options?.onError?.(),
+        ),
     );
   };
 
-  const down = () => {
+  const deploy = (
+    data: { composeName: string },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
     setStatus("loading");
     stackSocket.emit(
       "stackCommand",
-      { composeName, command: "down" },
-      async (callback) => {
-        if (callback.status === "success") {
-          setStatus("success");
-          toast.success(callback.message);
-        }
-        if (callback.status === "error") {
-          setStatus("error");
-          toast.error(callback.message);
-        }
-      },
+      { composeName: data.composeName, command: "deploy" },
+      (callback) =>
+        handleSocketResponse(
+          callback,
+          setStatus,
+          () => options?.onSuccess?.(),
+          () => options?.onError?.(),
+        ),
     );
   };
 
-  const remove = () => {
+  const down = (
+    data: { composeName: string },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
+    setStatus("loading");
+    stackSocket.emit(
+      "stackCommand",
+      { composeName: data.composeName, command: "down" },
+      (callback) =>
+        handleSocketResponse(
+          callback,
+          setStatus,
+          () => options?.onSuccess?.(),
+          () => options?.onError?.(),
+        ),
+    );
+  };
+
+  const remove = (
+    data: { composeName: string },
+    options?: {
+      onSuccess?: () => void;
+      onError?: () => void;
+    },
+  ) => {
     setStatus("loading");
     router.push("/");
-    stackSocket.emit("removeStack", { composeName }, async (callback) => {
-      if (callback.status === "success") {
-        setStatus("success");
-        toast.success(callback.message);
-      }
-      if (callback.status === "error") {
-        setStatus("error");
-        toast.error(callback.message);
-      }
-    });
+    stackSocket.emit(
+      "removeStack",
+      { composeName: data.composeName },
+      (callback) =>
+        handleSocketResponse(
+          callback,
+          setStatus,
+          () => options?.onSuccess?.(),
+          () => options?.onError?.(),
+        ),
+    );
   };
 
   return {
     status,
     create,
-    save,
+    saveCompose,
+    saveEnv,
     deploy,
-    saveAndDeploy,
     down,
     remove,
+    isLoading: status === "loading",
+    isError: status === "error",
   };
 }

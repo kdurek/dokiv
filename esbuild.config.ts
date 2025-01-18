@@ -3,14 +3,16 @@ import esbuild from "esbuild";
 try {
   esbuild
     .build({
-      entryPoints: ["./src/server/server.ts"],
+      entryPoints: {
+        server: "src/server/index.ts",
+      },
       bundle: true,
       platform: "node",
       format: "esm",
-      target: "node20",
+      target: "node22",
       outExtension: { ".js": ".mjs" },
       minify: true,
-      sourcemap: true,
+      // sourcemap: true,
       outdir: "dist",
       tsconfig: "tsconfig.server.json",
       packages: "external",

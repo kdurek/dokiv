@@ -1,8 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
-import { TRPCReactProvider } from "@/trpc/react";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-import { ThemeProvider } from "next-themes";
 
 import "@/styles/globals.css";
 
@@ -22,12 +20,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider attribute="class" defaultTheme="dark">
-          <TRPCReactProvider>
-            {children}
-            <Toaster />
-          </TRPCReactProvider>
-        </ThemeProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

@@ -1,9 +1,11 @@
 "use client";
 
-import { stackValueAtom, isEditingAtom, stackListAtom } from "@/lib/atoms";
-import { useAtom, useAtomValue } from "jotai";
+import { Button } from "@/components/ui/button";
+import { useSaveCompose } from "@/hooks/stack/use-save-compose";
+import { stackListAtom } from "@/lib/atoms";
+import { useAtomValue } from "jotai";
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const CodeEditor = dynamic(
   () => import("@/components/code-editor").then((mod) => mod.CodeEditor),
@@ -13,23 +15,49 @@ const CodeEditor = dynamic(
 );
 
 export function ComposeEditor({ composeName }: { composeName: string }) {
-  const isEditing = useAtomValue(isEditingAtom);
   const stackList = useAtomValue(stackListAtom);
   const stack = stackList.find((stack) => stack.name === composeName);
-  const [stackValue, setStackValue] = useAtom(stackValueAtom);
+  const { saveCompose, status } = useSaveCompose();
+  const [composeFile, setComposeFile] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!stack) return;
-
-    setStackValue(stack.stackFile);
-  }, [setStackValue, stack]);
+    setComposeFile(stack.stackFile);
+  }, [setComposeFile, stack]);
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-2xl">Stack</h2>
+      <div className="flex items-center gap-2">
+        {isEditing && (
+          <Button
+            onClick={() =>
+              saveCompose(
+                {
+                  composeName,
+                  composeFile,
+                },
+                {
+                  onSuccess: () => setIsEditing(false),
+                },
+              )
+            }
+            disabled={status === "loading"}
+          >
+            Save
+          </Button>
+        )}
+        <Button
+          variant="secondary"
+          onClick={() => setIsEditing((prev) => !prev)}
+          disabled={status === "loading"}
+        >
+          {isEditing ? "Cancel" : "Edit"}
+        </Button>
+      </div>
       <CodeEditor
-        value={stackValue}
-        onChange={setStackValue}
+        value={composeFile}
+        onChange={setComposeFile}
         editable={isEditing}
       />
     </div>

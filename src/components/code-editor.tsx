@@ -1,11 +1,12 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { StreamLanguage } from "@codemirror/language";
 import { properties } from "@codemirror/legacy-modes/mode/properties";
 import { yaml } from "@codemirror/lang-yaml";
-import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
+import { githubDark } from "@uiw/codemirror-theme-github";
 import type { ReactCodeMirrorProps } from "@uiw/react-codemirror";
 import CodeMirror from "@uiw/react-codemirror";
-import { useTheme } from "next-themes";
 
 interface Props extends ReactCodeMirrorProps {
   wrapperClassName?: string;
@@ -20,8 +21,6 @@ export function CodeEditor({
   editable,
   ...props
 }: Props) {
-  const { theme } = useTheme();
-
   const extensions =
     language === "yaml" ? [yaml()] : [StreamLanguage.define(properties)];
 
@@ -39,7 +38,7 @@ export function CodeEditor({
           highlightSelectionMatches: editable,
           allowMultipleSelections: editable,
         }}
-        theme={theme === "dark" ? githubDark : githubLight}
+        theme={githubDark}
         height="100%"
         width="100%"
         extensions={extensions}

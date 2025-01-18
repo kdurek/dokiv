@@ -7,9 +7,9 @@ import type {
 import { io, type Socket } from "socket.io-client";
 
 const wsUrl =
-  window.location.protocol === "http:"
-    ? window.location.protocol + "//" + window.location.hostname + ":3000"
-    : window.location.protocol + "//" + window.location.host;
+  process.env.NODE_ENV === "production"
+    ? window.location.protocol + "//" + window.location.host
+    : "http://localhost:3000";
 
 export const stackSocket: Socket<
   StackServerToClientEvents,

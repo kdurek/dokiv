@@ -7,9 +7,9 @@ import path from "path";
 import fs from "fs";
 import fsAsync from "fs/promises";
 import { dockerCompose } from "@/server/docker";
-import type { DockerComposePsResultService } from "docker-compose/dist/v2";
 import { parse } from "yaml";
 import type { DockerCompose } from "@/lib/types";
+import type { DockerComposePsResultService } from "docker-compose";
 
 export type Stack = {
   name: string;
