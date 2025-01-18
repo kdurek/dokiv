@@ -66,14 +66,17 @@ export function getStackServicesStatus(services: Stack["services"]) {
 }
 
 export async function getStackFile(stackDir: string, stackName: string) {
-  try {
-    return fsAsync.readFile(
-      `${stackDir}/${stackName}/${COMPOSE_FILE_NAME}`,
-      "utf-8",
-    );
-  } catch {
-    return "";
+  for (const filename of COMPOSE_FILE_NAMES) {
+    try {
+      const filePath = path.join(stackDir, stackName, filename);
+      if (await fileExists(filePath)) {
+        return fsAsync.readFile(filePath, "utf-8");
+      }
+    } catch {
+      continue;
+    }
   }
+  return "";
 }
 
 export async function getParsedStackFile(stackFile: string) {

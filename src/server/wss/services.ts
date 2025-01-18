@@ -37,10 +37,13 @@ export const sendStackList = async (
       .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
         try {
-          if (!(await composeFileExists(env.STACKS_DIR, entry.name))) {
+          const hasComposeFile = await composeFileExists(env.STACKS_DIR, entry.name);
+          if (!hasComposeFile) {
+            logger.warn(`No compose file found for stack ${entry.name}`);
             return null;
           }
-          return getStack(env.STACKS_DIR, entry.name);
+          const stack = await getStack(env.STACKS_DIR, entry.name);
+          return stack;
         } catch (error) {
           logger.error(`Failed to get stack ${entry.name}:`, error);
           return null;
