@@ -10,6 +10,18 @@ const activeProcesses = new Set<IPty>();
 // Track connected clients
 const connectedSockets = new Set<Socket>();
 
+// Debounce utility
+export const debounce = <T extends (...args: never[]) => void>(
+  func: T,
+  wait: number,
+) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 export const addSocket = (socket: Socket) => {
   connectedSockets.add(socket);
 };
@@ -35,7 +47,16 @@ export const getShell = () => {
   }
 };
 
+// Optimize process spawning with pooling
+const processPool = new Map<string, IPty>();
+
 export const spawnTerminal = (composeName: string, command: string) => {
+  const key = `${composeName}:${command}`;
+
+  if (processPool.has(key)) {
+    return processPool.get(key)!;
+  }
+
   const shell = getShell();
   const ptyProcess = spawn(shell, ["-c", command], {
     name: "xterm-256color",
@@ -43,10 +64,12 @@ export const spawnTerminal = (composeName: string, command: string) => {
     env: process.env,
   });
 
+  processPool.set(key, ptyProcess);
   activeProcesses.add(ptyProcess);
 
   ptyProcess.onExit(() => {
     activeProcesses.delete(ptyProcess);
+    processPool.delete(key);
   });
 
   // Handle errors

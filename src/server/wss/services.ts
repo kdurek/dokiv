@@ -17,55 +17,74 @@ import {
   addSocket,
   broadcastToAll,
   removeSocket,
+  debounce,
 } from "@/server/wss/utils";
 import fs from "node:fs/promises";
 import type { Socket } from "socket.io";
 import { logger } from "@/server/utils/logger";
+
+// Memoize stack validation results
+const stackValidationCache = new Map<string, boolean>();
+
+const validateStackName = (composeName: string) => {
+  if (stackValidationCache.has(composeName)) {
+    return stackValidationCache.get(composeName);
+  }
+  const isValid = /^[a-z0-9-_]+$/.test(composeName);
+  stackValidationCache.set(composeName, isValid);
+  return isValid;
+};
+
+// Batch process directory reads
+const readStacksDirectory = async () => {
+  const entries = await fs.readdir(env.STACKS_DIR, {
+    withFileTypes: true,
+    encoding: "utf-8",
+  });
+
+  const validDirectories = entries.filter((entry) => entry.isDirectory());
+  const composeFileChecks = await Promise.all(
+    validDirectories.map((entry) =>
+      composeFileExists(env.STACKS_DIR, entry.name),
+    ),
+  );
+
+  return validDirectories.filter((_, index) => composeFileChecks[index]);
+};
 
 export const sendStackList = async (
   socket: Socket<StackClientToServerEvents, StackServerToClientEvents>,
   cache = false,
 ) => {
   try {
-    const cachedList = getCachedStackList();
-    if (cache && cachedList && cachedList.length > 0) {
-      socket.emit("stackList", cachedList);
-      return;
+    if (cache) {
+      const cachedList = getCachedStackList();
+      if (Array.isArray(cachedList) && cachedList.length > 0) {
+        socket.emit("stackList", cachedList);
+        return;
+      }
     }
 
-    const entries = await fs.readdir(env.STACKS_DIR, {
-      withFileTypes: true,
-      encoding: "utf-8",
-    });
+    const validDirectories = await readStacksDirectory();
+    const stacks = await Promise.all(
+      validDirectories.map((entry) => getStack(env.STACKS_DIR, entry.name)),
+    );
 
-    const stackPromises = entries
-      .filter((entry) => entry.isDirectory())
-      .map(async (entry) => {
-        try {
-          const hasComposeFile = await composeFileExists(
-            env.STACKS_DIR,
-            entry.name,
-          );
-          if (!hasComposeFile) {
-            logger.warn(`No compose file found for stack ${entry.name}`);
-            return null;
-          }
-          const stack = await getStack(env.STACKS_DIR, entry.name);
-          return stack;
-        } catch (error) {
-          logger.error(`Failed to get stack ${entry.name}:`, error);
-          return null;
-        }
-      });
-
-    const stackList = (await Promise.all(stackPromises))
+    const stackList = stacks
       .filter((stack): stack is Stack => stack !== null)
       .sort(
         (a, b) => SORT_ORDER.indexOf(a.state) - SORT_ORDER.indexOf(b.state),
       );
 
     updateCachedStackList(stackList);
-    broadcastToAll("stackList", stackList);
+
+    // Debounce broadcast to prevent flooding
+    const debouncedBroadcast = debounce(
+      () => broadcastToAll("stackList", stackList),
+      100,
+    );
+    debouncedBroadcast();
+
     return stackList;
   } catch (error) {
     logger.error("Failed to send stack list:", error);
@@ -109,7 +128,7 @@ export const onCreateStack = async (
       encoding: "utf-8",
     });
 
-    const validateName = /^[a-z0-9-_]+$/.exec(composeName);
+    const validateName = validateStackName(composeName);
     if (!validateName) {
       return callback({
         status: "error",
