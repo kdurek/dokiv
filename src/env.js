@@ -11,6 +11,7 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     STACKS_DIR: z.string(),
+    AUTH_SECRET: z.string(),
   },
 
   /**
@@ -29,6 +30,7 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     STACKS_DIR: process.env.STACKS_DIR,
+    AUTH_SECRET: process.env.AUTH_SECRET,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
