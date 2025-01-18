@@ -9,7 +9,7 @@ import { useDownStack } from "@/hooks/stack/use-down-stack";
 import { stackListAtom } from "@/lib/atoms";
 import type { DockerService } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import type { Stack } from "@/server/api/utils";
+import type { Stack } from "@/server/utils";
 import { useAtomValue } from "jotai";
 import { memo } from "react";
 

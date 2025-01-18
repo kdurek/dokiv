@@ -1,5 +1,5 @@
 import { env } from "@/env";
-import { composeFileExists, getStack, type Stack } from "@/server/api/utils";
+import { composeFileExists, getStack, type Stack } from "@/server/utils";
 import { COMPOSE_FILE_NAME, ENV_FILE_NAME, SORT_ORDER } from "@/server/consts";
 import { dockerCompose, type DockerComposeError } from "@/server/docker";
 import type {

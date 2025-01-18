@@ -1,4 +1,4 @@
-import { type Stack } from "@/server/api/utils";
+import { type Stack } from "@/server/utils";
 import { logger } from "@/server/utils/logger";
 import { validateWebSocketAuth } from "@/server/wss/auth";
 // import { validateWebSocketRequest } from "@/server/auth/wss";

@@ -1,4 +1,4 @@
-import type { Stack } from "@/server/api/utils";
+import type { Stack } from "@/server/utils";
 import { logger } from "@/server/utils/logger";
 
 interface CacheEntry {

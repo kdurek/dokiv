@@ -1,5 +1,5 @@
 import { stackSocket } from "@/lib/socket";
-import type { Stack } from "@/server/api/utils";
+import type { Stack } from "@/server/utils";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
 
